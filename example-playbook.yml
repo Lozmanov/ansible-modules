@@ -1,0 +1,76 @@
+---
+- name: Example to activate the parcel
+  hosts: localhost
+  become: false
+  tasks:
+
+    - name: Change some config and apply it (without restarting any services)
+      cloudera_config_manager:
+        cm_login: admin
+        cm_password: admin
+        cm_host: dcher01-vm0
+        cluster: DCHER-01
+        config_parameters: '{
+          "COMMAND_EVICTION_AGE_HOURS": "17200",
+          "TAGS_LIMIT": "100001"
+        }'
+        action: set
+
+    - name: Set role config
+      cloudera_role_manager:
+        cm_login: admin
+        cm_password: admin
+        cm_host: dcher01-vm0
+        cluster: DCHER-01
+        services: hdfs1
+        action: roles-set-config
+        config_view: summary
+        roles: '[
+          {"type":"NAMENODE"}
+        ]'
+        roles_configs: '{
+          "fs_checkpoint_period": "3700"
+        }'
+
+    - name: Get role config
+      cloudera_role_manager:
+        cm_login: admin
+        cm_password: admin
+        cm_host: dcher01-vm0
+        cluster: DCHER-01
+        services: hdfs1
+        action: roles-get-config
+        config_view: full
+        roles: '[
+          {"type":"NAMENODE"}
+        ]'
+      register: roles_config
+
+    - name: Get short cluster info (cluster, services, hosts, roles, non-default config params)
+      cloudera_state_manager:
+        cm_login: admin
+        cm_password: admin
+        cm_host: dcher01-vm0
+        cluster: DCHER-01
+        action: info
+        config_view: summary
+      register: message_to_print
+
+    - name: Print cluster config
+      debug:
+        msg: "{{ message_to_print.meta.config }}"
+
+    - name: Print roles info
+      debug:
+        msg: "{{ roles_config }}"
+
+    - name: Rolling restart stale services (requires HA, Enterprise license, and takes longer than just restart)
+      cloudera_state_manager:
+        cm_login: admin
+        cm_password:  admin
+        cm_host: dcher01-vm0
+        cm_proto: http
+        cm_port: 7180
+        action: rolling-restart
+        only_stale_services: true
+        rolling_restart_roles_type: all_roles

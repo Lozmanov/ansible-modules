@@ -22,7 +22,7 @@ def build_module():
         "cm_password": {"required": True, "type": "str", "no_log": True},
         "cm_host": {"required": True, "type": "str"},
         "cm_port": {"required": False, "type": "str", "default": "7180"},
-        "cluster_name": {"required": True, "type": "str"},
+        "cluster": {"required": True, "type": "str"},
         "api_version": {"required": False, "type": "str", "default": "18"},
         "product": {"required": False, "type": "str"},
         "version": {"required": False, "type": "str", "default": "latest"},
@@ -109,7 +109,11 @@ class Parcel:
         if self.no_wait:
             return True
         trans_states = ["downloading", "distributing", "undistributing", "activating"]
-        while ((self.status.total_count > 0) and (self.status.total_count != self.status.count) or (self.stage in trans_states)):
+        while (
+            (self.status.total_count > 0)
+            and (self.status.total_count != self.status.count)
+            or (self.stage in trans_states)
+        ):
             time.sleep(1)
             self._update()
 
@@ -131,7 +135,9 @@ class Parcel:
 
     @Decorators.try_cm_api
     def _remove_distribution(self):
-        self.parcel_api_client_instance.start_removal_of_distribution_command(self.cluster_name, self.name, self.version)
+        self.parcel_api_client_instance.start_removal_of_distribution_command(
+            self.cluster_name, self.name, self.version
+        )
 
     @Decorators.try_cm_api
     def _remove_downloaded(self):
@@ -194,8 +200,8 @@ class Parcel:
         return meta
 
     def __repr__(self):
-        return f'Parcel(name="{self.name}", version="{self.version}", cluster_name="{self.cluster_name}", api_client={self.api_client},\
-                        stage="{self.stage}", status={self.status})'
+        return f'Parcel(name="{self.name}", version="{self.version}", cluster_name="{self.cluster_name}",\
+            api_client={self.api_client}, stage="{self.stage}", status={self.status})'
 
     def __str__(self):
         return f"name: {self.name}, version: {self.version}, state: {self.stage}"
@@ -222,14 +228,20 @@ def main():
         api_client_instance = cm_client.ParcelsResourceApi(api_client)
         try:
             parcels = []
-            for parcel in api_client_instance.read_parcels(params["cluster_name"]).items:
+            for parcel in api_client_instance.read_parcels(params["cluster"]).items:
                 if params["product"] is not None:
                     # Info about a specific product?
                     if params["product"] != parcel.product:
                         continue
                     # Info about a specific version? "Latest" will not work here.
                     # TODO: Regex and "latest" detection
-                    supposed_parcel = Parcel(params["product"], params["version"], params["cluster_name"], api_client, module)
+                    supposed_parcel = Parcel(
+                        params["product"],
+                        params["version"],
+                        params["cluster"],
+                        api_client,
+                        module
+                    )
                     if supposed_parcel.version != parcel.version:
                         continue
                 parcels.append(
@@ -246,7 +258,7 @@ def main():
             module.fail_json(msg=f"Cluster error : {e}")
     else:
         if params["product"] is not None:
-            parcel = Parcel(params["product"], params["version"], params["cluster_name"], api_client, module)
+            parcel = Parcel(params["product"], params["version"], params["cluster"], api_client, module)
             try:
                 getattr(parcel, choice_map.get(params["state"]))()
             except ApiException as e:
