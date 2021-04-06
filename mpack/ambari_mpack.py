@@ -186,10 +186,11 @@ class Mpack:
 
         if propertie_key in new_item['Clusters']['desired_config'][0]['properties'] and \
                 new_item['Clusters']['desired_config'][0]['properties'][propertie_key] != '':
-                    if propertie_value not in new_item['Clusters']['desired_config'][0]['properties'][propertie_key]:
-                        propertie_value = new_item['Clusters']['desired_config'][0]['properties'][propertie_key] + propertie_value
-                    else:
-                        propertie_value = new_item['Clusters']['desired_config'][0]['properties'][propertie_key]
+            if propertie_value not in new_item['Clusters']['desired_config'][0]['properties'][propertie_key]:
+                propertie_value = new_item['Clusters']['desired_config'][0]['properties'][propertie_key] + \
+                    propertie_value
+            else:
+                propertie_value = new_item['Clusters']['desired_config'][0]['properties'][propertie_key]
 
         new_item['Clusters']['desired_config'][0]['properties'].update({propertie_key: propertie_value})
 
