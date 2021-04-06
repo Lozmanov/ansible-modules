@@ -1,0 +1,78 @@
+---
+- name: Install mpack
+  hosts: all
+  become: true
+  tasks:
+    - name: Download mpack
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.dest }}"
+      loop:
+        - {
+            url: 'http://fusion-repo.wandisco.com/mpacks/fusion-client-2.17.0.0.4213_SNAPSHOT-HDP3-internal.mpack.tar.gz',
+            dest: '/tmp/fusion_client.tar.gz'
+          }
+        - {
+            url: 'http://fusion-repo.wandisco.com/mpacks/fusion-server-2.17.0.0.4213_SNAPSHOT-internal.mpack.tar.gz',
+            dest: '/tmp/fusion_server.tar.gz'
+          }
+    - name: Install Mpack
+      shell: ambari-server install-mpack --mpack={{ item.mpack }}
+      loop:
+        - { mpack: '/tmp/fusion_client.tar.gz' }
+        - { mpack: '/tmp/fusion_server.tar.gz' }
+    - name: Restart ambari server
+      shell: ambari-server restart
+
+- name: Example to install services
+  hosts: localhost
+  become: false
+  tasks:
+    - name: download and unpack mpack configs
+      unarchive:
+        src: "{{ item.url }}"
+        dest: "/tmp"
+        remote_src: yes
+      loop:
+        - {
+            url: 'http://fusion-repo.wandisco.com/mpacks/fusion-client-2.17.0.0.4213_SNAPSHOT-HDP3-internal.mpack.tar.gz',
+          }
+        - {
+            url: 'http://fusion-repo.wandisco.com/mpacks/fusion-server-2.17.0.0.4213_SNAPSHOT-internal.mpack.tar.gz',
+          }
+    - name: install service
+      ambari_mpack:
+        login: admin
+        password: admin
+        host: osusl01-vm0.bdfrem.wandisco.com
+        cluster_name: OSUSL-01
+        port: 8080
+        service: "{{ item.name }}"
+        components: "{{ item.components }}"
+        count: "{{ item.count }}"
+        config_path: "{{ item.config_path }}"
+        extra: "{{ item.extra }}"
+        state: "{{ item.status }}"
+      loop:
+        - { name: 'FUSION',
+            components: ['FUSION_SERVER', 'FUSION_IHC_SERVER'],
+            count: 2,
+            status: 'started',
+            config_path: '/tmp/fusion.server/common-services/*/*/configuration/',
+            extra: [
+              ["fusion-server-site", "fusion.service", "osusl01-vm0.bdfrem.wandisco.com:8023,osusl01-vm1.bdfrem.wandisco.com:8023"],
+              ["fusion-server-site", "zone", "OSUSL-01"],
+              ["fusion-common-site", "fs.fusion.underlyingFs", "hdfs://nameservice01"]
+            ]
+          }
+        - { name: 'FUSION_CLIENT',
+            components: ['FUSION_CLIENT'],
+            count: 2,
+            config_path: '/tmp/fusion.client/common-services/*/*/configuration/',
+            extra: [
+              ["core-site", "fs.hdfs.impl", "com.wandisco.fs.client.FusionHdfs"],
+              ["hadoop-env", "content", "\nexport HADOOP_CLASSPATH=$HADOOP_CLASSPATH:/etc/wandisco/fusion/client:/etc/wandisco/fusion/conf"]
+            ],
+            status: 'present'
+          }
+
