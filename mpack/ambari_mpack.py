@@ -129,15 +129,16 @@ class Mpack:
 
             if self.extra_config is not None:
                 for config in self.extra_config:
-                    self._update_configuration(config[0], config[1], config[2])
+                    properties = config[0]['properties']
+                    for propertie in properties:
+                        self._update_configuration(config[0]['config_type'], propertie['name'], propertie['value'])
             for component in self.components:
-                if self.component_hosts_count != 0:
-                    index = 0
-                    for host in self.api_client.clusters(self.cluster_name).hosts:
-                        self._add_service_component_to_host(component, host.host_name)
-                        index += 1
-                        if index == self.component_hosts_count:
-                            break
+                index = 0
+                for host in self.api_client.clusters(self.cluster_name).hosts:
+                    self._add_service_component_to_host(component, host.host_name)
+                    index += 1
+                    if index == self.component_hosts_count:
+                        break
             self._restart_stale_config_components()
         self._update()
 

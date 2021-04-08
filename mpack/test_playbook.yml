@@ -60,19 +60,46 @@
             status: 'started',
             config_path: '/tmp/fusion.server/common-services/*/*/configuration/',
             extra: [
-              ["fusion-server-site", "fusion.service", "osusl01-vm0.bdfrem.wandisco.com:8023,osusl01-vm1.bdfrem.wandisco.com:8023"],
-              ["fusion-server-site", "zone", "OSUSL-01"],
-              ["fusion-common-site", "fs.fusion.underlyingFs", "hdfs://nameservice01"]
+              [
+                {
+                  config_type: "fusion-server-site",
+                  properties: [
+                    { name: "fusion.service", value: "osusl01-vm0.bdfrem.wandisco.com:8023,osusl01-vm1.bdfrem.wandisco.com:8023" },
+                    { name: "zone", value: "OSUSL-01" }
+                  ],
+                }
+              ],
+              [
+                {
+                  config_type: "fusion-common-site",
+                  properties: [
+                    { name: "fs.fusion.underlyingFs", value: "hdfs://nameservice01" }
+                  ]
+                }
+              ]
             ]
           }
         - { name: 'FUSION_CLIENT',
             components: ['FUSION_CLIENT'],
-            count: 2,
+            count: 0,
             config_path: '/tmp/fusion.client/common-services/*/*/configuration/',
             extra: [
-              ["core-site", "fs.hdfs.impl", "com.wandisco.fs.client.FusionHdfs"],
-              ["hadoop-env", "content", "\nexport HADOOP_CLASSPATH=$HADOOP_CLASSPATH:/etc/wandisco/fusion/client:/etc/wandisco/fusion/conf"]
+              [
+                {
+                  config_type: "core-site",
+                  properties: [
+                    { name: "fs.hdfs.impl", value: "com.wandisco.fs.client.FusionHdfs" }
+                  ]
+                }
+              ],
+              [
+                {
+                  config_type: "hadoop-env",
+                  properties: [
+                    { name: "content", value: "\nexport HADOOP_CLASSPATH=$HADOOP_CLASSPATH:/etc/wandisco/fusion/client:/etc/wandisco/fusion/conf" }
+                  ]
+                }
+              ]
             ],
             status: 'present'
           }
-
